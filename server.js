@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-
+const fetch = require("node-fetch"); // ← CommonJS
 const connectDB = require("./db");
 
 const app = express();
@@ -9,6 +9,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ===============================
+// ROOT
+// ===============================
 app.get("/", (req, res) => {
     res.send("Great Minds backend is running");
 });
@@ -80,48 +83,46 @@ app.post("/api/conversations", async (req, res) => {
     }
 });
 
-
 // =======================================
-// AI: Gemini Endpoint
+// AI: GEMINI (FREE OPTION) 
 // =======================================
-import fetch from "node-fetch";
-import dotenv from "dotenv";
-dotenv.config();
-
 app.post("/ai/gemini", async (req, res) => {
-  try {
-    const { topic, messages } = req.body;
+    try {
+        const { topic, messages } = req.body;
 
-    const last = messages[messages.length - 1]?.text || "Hello.";
+        const last = messages?.[messages.length - 1]?.text || "Hello.";
 
-    const body = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `Topic: ${topic}\n\nLast message: ${last}` }]
-        }
-      ]
-    };
+        const body = {
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        { text: `Topic: ${topic}\nUser says: ${last}` }
+                    ]
+                }
+            ]
+        };
 
-    const result = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      }
-    );
+        const result = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            }
+        );
 
-    const data = await result.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const data = await result.json();
+        const reply =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "I'm sorry, I could not generate a response.";
 
-    res.json({ reply: text || "..." });
-  } catch (err) {
-    console.error("Gemini error:", err);
-    res.status(500).json({ error: "Gemini error" });
-  }
+        res.json({ reply });
+    } catch (err) {
+        console.error("Gemini error:", err);
+        res.status(500).json({ error: "Gemini error" });
+    }
 });
-
 
 // ===============================
 // SERVER LISTEN
