@@ -8,14 +8,12 @@ router.get("/", async (req: Request, res: Response) => {
   const conversations = await Conversation.find()
     .sort({ createdAt: -1 })
     .limit(15);
-
   res.json(conversations);
 });
 
 // Guardar una nueva conversación
 router.post("/", async (req: Request, res: Response) => {
   const { topic, messages } = req.body;
-
   const conversation = new Conversation({ topic, messages });
   await conversation.save();
 

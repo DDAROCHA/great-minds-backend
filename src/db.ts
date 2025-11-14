@@ -1,18 +1,12 @@
 import mongoose from "mongoose";
 
-const mongoUri = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI;
 
-if (!mongoUri) {
-  console.error("❌ ERROR: MONGO_URI no está definida.");
-  process.exit(1);
+if (!MONGO_URI) {
+  throw new Error("Falta la variable de entorno MONGO_URI");
 }
 
-export const connectDB = async () => {
-  try {
-    await mongoose.connect(mongoUri);
-    console.log("MongoDB conectado");
-  } catch (err) {
-    console.error("Error al conectar MongoDB:", err);
-    process.exit(1);
-  }
-};
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("MongoDB conectado"))
+  .catch((err) => console.error("Error conectando a MongoDB:", err));
