@@ -80,6 +80,49 @@ app.post("/api/conversations", async (req, res) => {
     }
 });
 
+
+// =======================================
+// AI: Gemini Endpoint
+// =======================================
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+dotenv.config();
+
+app.post("/ai/gemini", async (req, res) => {
+  try {
+    const { topic, messages } = req.body;
+
+    const last = messages[messages.length - 1]?.text || "Hello.";
+
+    const body = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `Topic: ${topic}\n\nLast message: ${last}` }]
+        }
+      ]
+    };
+
+    const result = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      }
+    );
+
+    const data = await result.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    res.json({ reply: text || "..." });
+  } catch (err) {
+    console.error("Gemini error:", err);
+    res.status(500).json({ error: "Gemini error" });
+  }
+});
+
+
 // ===============================
 // SERVER LISTEN
 // ===============================
