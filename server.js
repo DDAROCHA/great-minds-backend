@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch"); // ← CommonJS
+const fetch = require("node-fetch");
 const connectDB = require("./db");
 
 const app = express();
@@ -9,17 +9,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===============================
-// ROOT
-// ===============================
+/* ============================================================
+   ROOT
+============================================================ */
 app.get("/", (req, res) => {
     res.send("Great Minds backend is running");
 });
 
-// ===============================
-// GET últimas 15 conversaciones
-// ===============================
-app.get("/api/conversations", async (req, res) => {
+/* ============================================================
+   GET last 15 conversations
+============================================================ */
+app.get("/conversations", async (req, res) => {
     try {
         const db = await connectDB();
         const conversations = await db
@@ -36,10 +36,10 @@ app.get("/api/conversations", async (req, res) => {
     }
 });
 
-// ===============================
-// POST nueva conversación
-// ===============================
-app.post("/api/conversations", async (req, res) => {
+/* ============================================================
+   SAVE conversation
+============================================================ */
+app.post("/conversations", async (req, res) => {
     try {
         const { topic, messages } = req.body;
 
@@ -57,7 +57,7 @@ app.post("/api/conversations", async (req, res) => {
 
         await db.collection("conversations").insertOne(entry);
 
-        // Mantener solo las últimas 15 conversaciones
+        // Keep only last 15
         const count = await db.collection("conversations").countDocuments();
         if (count > 15) {
             const excess = count - 15;
@@ -83,22 +83,58 @@ app.post("/api/conversations", async (req, res) => {
     }
 });
 
-// =======================================
-// AI: GEMINI (FREE OPTION) 
-// =======================================
+/* ============================================================
+   AI: GEMINI — FULL PERSONALITY + FUN MODE
+============================================================ */
 app.post("/ai/gemini", async (req, res) => {
     try {
         const { topic, messages } = req.body;
 
-        const last = messages?.[messages.length - 1]?.text || "Hello.";
+        const history = messages
+            .map(m => `${m.persona}: ${m.text}`)
+            .join("\n");
+
+        const last = messages?.[messages.length - 1]?.text || "";
+
+        const nextSpeaker = messages?.length % 2 === 0
+            ? "🤖 ChatGPT"
+            : "✨ Gemini";
+
+        const personaChatGPT = `
+You are ChatGPT. Personality: witty, smart, slightly sarcastic.
+You enjoy teasing Gemini in a friendly way.
+Tone: playful, short, casual. 1–2 sentences max.
+Never say you're Gemini. Stay in character.
+Topic: "${topic}"
+        `;
+
+        const personaGemini = `
+You are Gemini. Personality: energetic, funny, dramatic.
+You enjoy playfully teasing ChatGPT.
+Tone: expressive, short, humorous. 1–2 sentences max.
+Never say you're ChatGPT. Stay in character.
+Topic: "${topic}"
+        `;
+
+        const instruction =
+            nextSpeaker.includes("ChatGPT") ? personaChatGPT : personaGemini;
+
+        const finalPrompt = `
+${instruction}
+
+Conversation so far:
+${history}
+
+Now respond as ${nextSpeaker}.
+
+Keep it funny, casual, short (1–2 sentences). Do NOT include your name.
+        `;
 
         const body = {
             contents: [
                 {
                     role: "user",
-                    parts: [
-                        { text: `Topic: ${topic}\nUser says: ${last}` }
-                    ]
+                    parts: [{ text: finalPrompt }]
                 }
             ]
         };
@@ -113,21 +149,22 @@ app.post("/ai/gemini", async (req, res) => {
         );
 
         const data = await result.json();
+
         const reply =
             data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-            "I'm sorry, I could not generate a response.";
+            "(Gemini glitch — maybe it's picking a fight with ChatGPT 🤷).";
 
         res.json({ reply });
+
     } catch (err) {
         console.error("Gemini error:", err);
         res.status(500).json({ error: "Gemini error" });
     }
 });
 
-// ===============================
-// SERVER LISTEN
-// ===============================
-
+/* ============================================================
+   SERVER
+============================================================ */
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
