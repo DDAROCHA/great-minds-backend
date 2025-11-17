@@ -6,6 +6,8 @@ const connectDB = require("./db");
 
 const app = express();
 
+const GEMINI_MODEL = "gemini-2.0-flash";
+
 app.use(cors());
 app.use(express.json());
 
@@ -90,6 +92,8 @@ app.post("/ai/gemini", async (req, res) => {
   try {
     const { topic, messages } = req.body;
 
+    console.log(messages);
+
     const last = messages?.[messages.length - 1]?.text || "Hello.";
 
     const body = {
@@ -101,10 +105,9 @@ app.post("/ai/gemini", async (req, res) => {
       ],
     };
 
-    console.log(JSON.stringify(body));
-
+    //GEMINI_MODEL
     const result = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
