@@ -6,7 +6,8 @@ const connectDB = require("./db");
 
 const app = express();
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+//const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.0-flash-lite";
 
 app.use(cors());
 app.use(express.json());
