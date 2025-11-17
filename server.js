@@ -93,7 +93,7 @@ app.post("/ai/gemini", async (req, res) => {
   try {
     const { topic, messages } = req.body;
 
-    console.log(messages);
+    //console.log(messages);
 
     const last = messages?.[messages.length - 1]?.text || "Hello.";
 
