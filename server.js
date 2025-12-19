@@ -92,23 +92,23 @@ app.post("/api/conversations", async (req, res) => {
 app.post("/ai/gemini", async (req, res) => {
   try {
     const { topic, messages } = req.body;
+
     const last = messages?.[messages.length - 1]?.text || "Hello.";
 
-    // 1. Build body from ENV
-    let bodyTemplate = process.env.GEMINI_REQUEST_BODY;
+    // 🔒 BODY SEGURO (NO JSON.parse, NO replace)
+    const body = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Topic: ${topic}\nMessage: ${last}`,
+            },
+          ],
+        },
+      ],
+    };
 
-    if (!bodyTemplate) {
-      return res.json({ reply: "" });
-    }
-
-    // 2. Replace placeholders
-    bodyTemplate = bodyTemplate
-      .replaceAll("{{topic}}", topic || "")
-      .replaceAll("{{message}}", last);
-
-    const body = JSON.parse(bodyTemplate);
-
-    // 3. Build endpoint
     const endpoint = process.env.GEMINI_ENDPOINT.replace(
       "{{MODEL}}",
       process.env.GEMINI_MODEL
