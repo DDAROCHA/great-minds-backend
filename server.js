@@ -92,23 +92,30 @@ app.post("/api/conversations", async (req, res) => {
 app.post("/ai/gemini", async (req, res) => {
   try {
     const { topic, messages } = req.body;
-
-    //console.log(messages);
-
     const last = messages?.[messages.length - 1]?.text || "Hello.";
 
-    const body = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: `Topic: ${topic}\nMessage: ${last}` }],
-        },
-      ],
-    };
+    // 1. Build body from ENV
+    let bodyTemplate = process.env.GEMINI_REQUEST_BODY;
 
-    //GEMINI_MODEL
+    if (!bodyTemplate) {
+      return res.json({ reply: "" });
+    }
+
+    // 2. Replace placeholders
+    bodyTemplate = bodyTemplate
+      .replaceAll("{{topic}}", topic || "")
+      .replaceAll("{{message}}", last);
+
+    const body = JSON.parse(bodyTemplate);
+
+    // 3. Build endpoint
+    const endpoint = process.env.GEMINI_ENDPOINT.replace(
+      "{{MODEL}}",
+      process.env.GEMINI_MODEL
+    );
+
     const result = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `${endpoint}?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,10 +125,7 @@ app.post("/ai/gemini", async (req, res) => {
 
     const data = await result.json();
 
-    // IMPORTANT: Return EMPTY STRING on failure.
-    // Fallbacks MUST be handled in the FRONTEND.
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     res.json({ reply });
   } catch (err) {
