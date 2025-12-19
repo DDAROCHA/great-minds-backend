@@ -87,32 +87,39 @@ app.post("/api/conversations", async (req, res) => {
 });
 
 // ===============================
-// AI: GEMINI
+// GEMINI AI ENDPOINT
 // ===============================
+
 app.post("/ai/gemini", async (req, res) => {
   try {
     const { topic, messages } = req.body;
     const last = messages?.[messages.length - 1]?.text || "Hello.";
 
-    // 1. Build body from ENV
+    console.log("🧪 INPUT topic:", topic);
+    console.log("🧪 INPUT last:", last);
+
     let bodyTemplate = process.env.GEMINI_REQUEST_BODY;
+
+    console.log("🧪 HAS BODY TEMPLATE:", !!bodyTemplate);
 
     if (!bodyTemplate) {
       return res.json({ reply: "" });
     }
 
-    // 2. Replace placeholders
     bodyTemplate = bodyTemplate
       .replaceAll("{{topic}}", topic || "")
       .replaceAll("{{message}}", last);
 
+    console.log("🧪 BODY TEMPLATE FINAL:", bodyTemplate);
+
     const body = JSON.parse(bodyTemplate);
 
-    // 3. Build endpoint
     const endpoint = process.env.GEMINI_ENDPOINT.replace(
       "{{MODEL}}",
       process.env.GEMINI_MODEL
     );
+
+    console.log("🧪 FINAL ENDPOINT:", endpoint);
 
     const result = await fetch(
       `${endpoint}?key=${process.env.GEMINI_API_KEY}`,
@@ -123,13 +130,17 @@ app.post("/ai/gemini", async (req, res) => {
       }
     );
 
+    console.log("🧪 GEMINI STATUS:", result.status);
+
     const data = await result.json();
+
+    console.log("🧪 GEMINI RAW RESPONSE:", data);
 
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     res.json({ reply });
   } catch (err) {
-    console.error("Gemini error:", err);
+    console.error("🔥 Gemini error:", err);
     res.status(500).json({ error: "Gemini error" });
   }
 });
