@@ -1,34 +1,36 @@
-const { MongoClient } = require("mongodb");
+const { MongoClient } = require('mongodb');
 
 const uri = process.env.MONGO_URL;
 
+//console.log('🔍 MONGO_URL:', uri);
+
 if (!uri) {
-    console.error("❌ ERROR: Missing MONGO_URL environment variable");
-    process.exit(1);
+  console.error('❌ ERROR: Missing MONGO_URL environment variable');
+  process.exit(1);
 }
 
 let db = null;
 let client = null;
 
 async function connectDB() {
-    try {
-        if (db) return db; // <- cached!
+  try {
+    if (db) return db; // <- cached!
 
-        client = new MongoClient(uri, {
-            maxPoolSize: 10,
-            minPoolSize: 1,
-            serverSelectionTimeoutMS: 5000,
-        });
+    client = new MongoClient(uri, {
+      maxPoolSize: 10,
+      minPoolSize: 1,
+      serverSelectionTimeoutMS: 5000,
+    });
 
-        await client.connect();
-        console.log("✅ MongoDB connected");
+    await client.connect();
+    console.log('✅ MongoDB connected');
 
-        db = client.db("greatminds");
-        return db;
-    } catch (err) {
-        console.error("❌ MongoDB connection error:", err);
-        throw err;
-    }
+    db = client.db('greatminds');
+    return db;
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    throw err;
+  }
 }
 
 module.exports = connectDB;
